@@ -1,16 +1,36 @@
 import { useMemo, useState } from 'react';
-import { ChevronDown, ChevronUp, ChevronsUpDown } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronUp,
+  ChevronsUpDown,
+  Inbox,
+  SearchX,
+  TriangleAlert,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import type { DataGridProps, FilterValue, SortState } from './DataGrid.types';
-import { filterRows, getCellValue, paginate, sortRows } from './helpers';
+import {
+  filterRows,
+  getCellValue,
+  isFilterActive,
+  paginate,
+  sortRows,
+} from './helpers';
 import { ColumnFilter } from './internals/ColumnFilter';
 import { DataGridPagination } from './internals/DataGridPagination';
+import { EmptyView } from './internals/EmptyView';
+import { LoadingSkeleton } from './internals/LoadingSkeleton';
 
 export function DataGrid<T>({
   data,
   columns,
   getRowId,
+  loading = false,
+  error = null,
+  onRetry,
+  emptyMessage = 'No data available',
+  noResultsMessage = 'No matching results',
   pageSize,
   defaultSort,
   onRowAction,
@@ -42,6 +62,8 @@ export function DataGrid<T>({
     [sortedData, clampedPage, effectivePageSize],
   );
 
+  const hasActiveFilters = Object.values(filters).some(isFilterActive);
+
   const handleSort = (columnId: string) => {
     setSort((prev) => {
       if (prev?.columnId !== columnId) return { columnId, direction: 'asc' };
@@ -65,10 +87,45 @@ export function DataGrid<T>({
 
   const showFilterRow = columns.some((c) => c.filterable);
 
+  // 1. Error wins over everything
+  if (error) {
+    return (
+      <div className="rounded-lg border">
+        <EmptyView
+          variant="error"
+          icon={<TriangleAlert className="h-10 w-10 text-destructive" />}
+          title={error}
+          action={
+            onRetry && (
+              <Button variant="outline" onClick={onRetry}>
+                Retry
+              </Button>
+            )
+          }
+        />
+      </div>
+    );
+  }
+
+  // 2. Empty dataset (not caused by filters)
+  if (!loading && data.length === 0 && !hasActiveFilters) {
+    return (
+      <div className="rounded-lg border">
+        <EmptyView icon={<Inbox className="h-10 w-10" />} title={emptyMessage} />
+      </div>
+    );
+  }
+
+  const isInitialLoad = loading && data.length === 0;
+
   return (
     <div className="w-full rounded-lg border">
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-sm" aria-label={ariaLabel}>
+        <table
+          className="w-full border-collapse text-sm"
+          aria-label={ariaLabel}
+          aria-busy={loading}
+        >
           {caption && <caption className="sr-only">{caption}</caption>}
           <thead>
             <tr className="border-b bg-muted/40">
@@ -119,42 +176,64 @@ export function DataGrid<T>({
               </tr>
             )}
           </thead>
-          <tbody>
-            {pageRows.map((row) => (
-              <tr
-                key={getRowId(row)}
-                className={cn(
-                  'border-b last:border-0 hover:bg-muted/30',
-                  rowClassName?.(row),
-                )}
-              >
-                {columns.map((column) => (
-                  <td
-                    key={column.id}
-                    className={cn('px-4 py-3', column.className)}
-                    style={{ textAlign: column.align ?? 'left' }}
-                  >
-                    {column.cell
-                      ? column.cell(row)
-                      : String(getCellValue(row, column) ?? '')}
-                  </td>
-                ))}
-                {onRowAction && (
-                  <td className="px-4 py-3 text-right">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onRowAction(row)}
+          {isInitialLoad ? (
+            <LoadingSkeleton columns={columns} />
+          ) : (
+            <tbody>
+              {pageRows.map((row) => (
+                <tr
+                  key={getRowId(row)}
+                  className={cn(
+                    'border-b last:border-0 hover:bg-muted/30',
+                    rowClassName?.(row),
+                  )}
+                >
+                  {columns.map((column) => (
+                    <td
+                      key={column.id}
+                      className={cn('px-4 py-3', column.className)}
+                      style={{ textAlign: column.align ?? 'left' }}
                     >
-                      {rowActionLabel}
-                    </Button>
-                  </td>
-                )}
-              </tr>
-            ))}
-          </tbody>
+                      {column.cell
+                        ? column.cell(row)
+                        : String(getCellValue(row, column) ?? '')}
+                    </td>
+                  ))}
+                  {onRowAction && (
+                    <td className="px-4 py-3 text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onRowAction(row)}
+                      >
+                        {rowActionLabel}
+                      </Button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          )}
         </table>
       </div>
+
+      {!loading && sortedData.length === 0 && hasActiveFilters && (
+        <EmptyView
+          icon={<SearchX className="h-10 w-10" />}
+          title={noResultsMessage}
+          action={
+            <Button
+              variant="outline"
+              onClick={() => {
+                setFilters({});
+                setCurrentPage(1);
+              }}
+            >
+              Clear filters
+            </Button>
+          }
+        />
+      )}
 
       {sortedData.length > effectivePageSize && (
         <DataGridPagination
