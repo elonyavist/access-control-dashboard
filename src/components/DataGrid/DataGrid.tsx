@@ -69,7 +69,7 @@ export function DataGrid<T>({
 
       <div className="overflow-x-auto">
         <table
-          className="w-full border-collapse text-sm"
+          className="w-full border-collapse text-sm table-fixed"
           aria-label={ariaLabel}
           aria-busy={loading}
         >
