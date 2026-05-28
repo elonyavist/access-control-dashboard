@@ -4,7 +4,7 @@ function App() {
       <h1 className="text-3xl font-bold text-slate-900">
         Access Control Dashboard
       </h1>
-      <p className="mt-2 text-slate-600">Tailwind is working</p>
+      <p className="mt-2 text-slate-600">Work in progress</p>
     </div>
   );
 }
