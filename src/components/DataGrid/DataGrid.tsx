@@ -2,8 +2,9 @@ import { useMemo, useState } from 'react';
 import { ChevronDown, ChevronUp, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import type { DataGridProps, SortState } from './DataGrid.types';
-import { getCellValue, sortRows } from './helpers';
+import type { DataGridProps, FilterValue, SortState } from './DataGrid.types';
+import { filterRows, getCellValue, sortRows } from './helpers';
+import { ColumnFilter } from './internals/ColumnFilter';
 
 export function DataGrid<T>({
   data,
@@ -17,10 +18,16 @@ export function DataGrid<T>({
   ariaLabel,
 }: DataGridProps<T>) {
   const [sort, setSort] = useState<SortState | null>(defaultSort ?? null);
+  const [filters, setFilters] = useState<Record<string, FilterValue>>({});
+
+  const filteredData = useMemo(
+    () => filterRows(data, columns, filters),
+    [data, columns, filters],
+  );
 
   const sortedData = useMemo(
-    () => sortRows(data, columns, sort),
-    [data, columns, sort],
+    () => sortRows(filteredData, columns, sort),
+    [filteredData, columns, sort],
   );
 
   const handleSort = (columnId: string) => {
@@ -31,12 +38,18 @@ export function DataGrid<T>({
     });
   };
 
+  const handleFilterChange = (columnId: string, value: FilterValue) => {
+    setFilters((prev) => ({ ...prev, [columnId]: value }));
+  };
+
   const ariaSortFor = (
     columnId: string,
   ): 'ascending' | 'descending' | 'none' => {
     if (sort?.columnId !== columnId) return 'none';
     return sort.direction === 'asc' ? 'ascending' : 'descending';
   };
+
+  const showFilterRow = columns.some((c) => c.filterable);
 
   return (
     <div className="w-full overflow-x-auto rounded-lg border">
@@ -76,6 +89,20 @@ export function DataGrid<T>({
               </th>
             )}
           </tr>
+          {showFilterRow && (
+            <tr className="border-b">
+              {columns.map((column) => (
+                <th key={column.id} className="px-4 py-2">
+                  <ColumnFilter
+                    column={column}
+                    value={filters[column.id]}
+                    onChange={(value) => handleFilterChange(column.id, value)}
+                  />
+                </th>
+              ))}
+              {onRowAction && <th />}
+            </tr>
+          )}
         </thead>
         <tbody>
           {sortedData.map((row) => (
