@@ -1,4 +1,3 @@
-import { useMemo, useState } from 'react';
 import {
   ChevronDown,
   ChevronUp,
@@ -9,14 +8,9 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import type { DataGridProps, FilterValue, SortState } from './DataGrid.types';
-import {
-  filterRows,
-  getCellValue,
-  isFilterActive,
-  paginate,
-  sortRows,
-} from './helpers';
+import type { DataGridProps } from './DataGrid.types';
+import { getCellValue } from './helpers';
+import { useDataGrid } from './useDataGrid';
 import { ColumnFilter } from './internals/ColumnFilter';
 import { DataGridPagination } from './internals/DataGridPagination';
 import { DataGridToolbar } from './internals/DataGridToolbar';
@@ -32,7 +26,7 @@ export function DataGrid<T>({
   onRetry,
   emptyMessage = 'No data available',
   noResultsMessage = 'No matching results',
-  pageSize,
+  pageSize = 25,
   defaultSort,
   onRowAction,
   rowActionLabel = 'Open',
@@ -40,70 +34,16 @@ export function DataGrid<T>({
   caption,
   ariaLabel,
 }: DataGridProps<T>) {
-  const [sort, setSort] = useState<SortState | null>(defaultSort ?? null);
-  const [filters, setFilters] = useState<Record<string, FilterValue>>({});
-  const [currentPage, setCurrentPage] = useState(1);
-  const [hiddenColumnIds, setHiddenColumnIds] = useState<Set<string>>(
-    () => new Set(columns.filter((c) => c.defaultHidden).map((c) => c.id)),
-  );
-  const effectivePageSize = pageSize ?? 25;
-
-  const visibleColumns = useMemo(
-    () => columns.filter((c) => !hiddenColumnIds.has(c.id)),
-    [columns, hiddenColumnIds],
-  );
-
-  const filteredData = useMemo(
-    () => filterRows(data, columns, filters),
-    [data, columns, filters],
-  );
-
-  const sortedData = useMemo(
-    () => sortRows(filteredData, columns, sort),
-    [filteredData, columns, sort],
-  );
-
-  const totalPages = Math.max(1, Math.ceil(sortedData.length / effectivePageSize));
-  const clampedPage = Math.min(currentPage, totalPages);
-
-  const pageRows = useMemo(
-    () => paginate(sortedData, clampedPage, effectivePageSize),
-    [sortedData, clampedPage, effectivePageSize],
-  );
-
-  const hasActiveFilters = Object.values(filters).some(isFilterActive);
-
-  const handleSort = (columnId: string) => {
-    setSort((prev) => {
-      if (prev?.columnId !== columnId) return { columnId, direction: 'asc' };
-      if (prev.direction === 'asc') return { columnId, direction: 'desc' };
-      return null;
-    });
-    setCurrentPage(1);
-  };
-
-  const handleFilterChange = (columnId: string, value: FilterValue) => {
-    setFilters((prev) => ({ ...prev, [columnId]: value }));
-    setCurrentPage(1);
-  };
-
-  const handleToggleColumn = (columnId: string) => {
-    setHiddenColumnIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(columnId)) next.delete(columnId);
-      else next.add(columnId);
-      return next;
-    });
-  };
+  const grid = useDataGrid({ data, columns, pageSize, defaultSort });
 
   const ariaSortFor = (
     columnId: string,
   ): 'ascending' | 'descending' | 'none' => {
-    if (sort?.columnId !== columnId) return 'none';
-    return sort.direction === 'asc' ? 'ascending' : 'descending';
+    if (grid.sort?.columnId !== columnId) return 'none';
+    return grid.sort.direction === 'asc' ? 'ascending' : 'descending';
   };
 
-  const showFilterRow = visibleColumns.some((c) => c.filterable);
+  const showFilterRow = grid.visibleColumns.some((c) => c.filterable);
 
   // 1. Error wins over everything
   if (error) {
@@ -126,7 +66,7 @@ export function DataGrid<T>({
   }
 
   // 2. Empty dataset (not caused by filters)
-  if (!loading && data.length === 0 && !hasActiveFilters) {
+  if (!loading && data.length === 0 && !grid.hasActiveFilters) {
     return (
       <div className="rounded-lg border">
         <EmptyView icon={<Inbox className="h-10 w-10" />} title={emptyMessage} />
@@ -140,8 +80,8 @@ export function DataGrid<T>({
     <div className="w-full rounded-lg border">
       <DataGridToolbar
         columns={columns}
-        hiddenColumnIds={hiddenColumnIds}
-        onToggleColumn={handleToggleColumn}
+        hiddenColumnIds={grid.hiddenColumnIds}
+        onToggleColumn={grid.toggleColumn}
       />
 
       <div className="overflow-x-auto">
@@ -153,7 +93,7 @@ export function DataGrid<T>({
           {caption && <caption className="sr-only">{caption}</caption>}
           <thead>
             <tr className="border-b bg-muted/40">
-              {visibleColumns.map((column) => (
+              {grid.visibleColumns.map((column) => (
                 <th
                   key={column.id}
                   scope="col"
@@ -165,13 +105,13 @@ export function DataGrid<T>({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleSort(column.id)}
+                      onClick={() => grid.toggleSort(column.id)}
                       className="h-auto gap-1 p-0 font-medium hover:bg-transparent hover:text-foreground"
                     >
                       {column.label}
                       <SortIcon
-                        active={sort?.columnId === column.id}
-                        direction={sort?.direction}
+                        active={grid.sort?.columnId === column.id}
+                        direction={grid.sort?.direction}
                       />
                     </Button>
                   ) : (
@@ -187,7 +127,7 @@ export function DataGrid<T>({
             </tr>
             {showFilterRow && (
               <tr className="border-b">
-                {visibleColumns.map((column) => (
+                {grid.visibleColumns.map((column) => (
                   <th key={column.id} className="px-4 py-2">
                     <div
                       className={cn(
@@ -197,8 +137,8 @@ export function DataGrid<T>({
                     >
                       <ColumnFilter
                         column={column}
-                        value={filters[column.id]}
-                        onChange={(value) => handleFilterChange(column.id, value)}
+                        value={grid.filters[column.id]}
+                        onChange={(value) => grid.setFilter(column.id, value)}
                       />
                     </div>
                   </th>
@@ -208,10 +148,10 @@ export function DataGrid<T>({
             )}
           </thead>
           {isInitialLoad ? (
-            <LoadingSkeleton columns={visibleColumns} />
+            <LoadingSkeleton columns={grid.visibleColumns} />
           ) : (
             <tbody>
-              {pageRows.map((row) => (
+              {grid.pageRows.map((row) => (
                 <tr
                   key={getRowId(row)}
                   className={cn(
@@ -219,7 +159,7 @@ export function DataGrid<T>({
                     rowClassName?.(row),
                   )}
                 >
-                  {visibleColumns.map((column) => (
+                  {grid.visibleColumns.map((column) => (
                     <td
                       key={column.id}
                       className={cn('px-4 py-3', column.className)}
@@ -248,31 +188,25 @@ export function DataGrid<T>({
         </table>
       </div>
 
-      {!loading && sortedData.length === 0 && hasActiveFilters && (
+      {!loading && grid.totalFiltered === 0 && grid.hasActiveFilters && (
         <EmptyView
           icon={<SearchX className="h-10 w-10" />}
           title={noResultsMessage}
           action={
-            <Button
-              variant="outline"
-              onClick={() => {
-                setFilters({});
-                setCurrentPage(1);
-              }}
-            >
+            <Button variant="outline" onClick={grid.clearFilters}>
               Clear filters
             </Button>
           }
         />
       )}
 
-      {sortedData.length > effectivePageSize && (
+      {grid.totalFiltered > pageSize && (
         <DataGridPagination
-          currentPage={clampedPage}
-          totalPages={totalPages}
-          totalItems={sortedData.length}
-          pageSize={effectivePageSize}
-          onPageChange={setCurrentPage}
+          currentPage={grid.currentPage}
+          totalPages={grid.totalPages}
+          totalItems={grid.totalFiltered}
+          pageSize={pageSize}
+          onPageChange={grid.goToPage}
         />
       )}
     </div>
