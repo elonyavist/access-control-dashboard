@@ -35,7 +35,7 @@ export function ColumnFilter<T>({
       >
         <SelectTrigger
           size="sm"
-          className="w-full"
+          className="w-full max-w-[250px]"
           aria-label={`Filter by ${column.label}`}
         >
           <SelectValue placeholder="All" />
@@ -58,7 +58,7 @@ export function ColumnFilter<T>({
       type="text"
       aria-label={`Filter by ${column.label}`}
       placeholder={`Filter ${column.label.toLowerCase()}`}
-      className="h-8 text-xs"
+      className="h-8 max-w-[250px] text-xs"
       value={text}
       onChange={(e) => onChange({ type: 'text', value: e.target.value })}
     />

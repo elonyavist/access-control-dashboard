@@ -189,11 +189,18 @@ export function DataGrid<T>({
               <tr className="border-b">
                 {visibleColumns.map((column) => (
                   <th key={column.id} className="px-4 py-2">
-                    <ColumnFilter
-                      column={column}
-                      value={filters[column.id]}
-                      onChange={(value) => handleFilterChange(column.id, value)}
-                    />
+                    <div
+                      className={cn(
+                        'flex',
+                        column.align === 'right' ? 'justify-end' : 'justify-start',
+                      )}
+                    >
+                      <ColumnFilter
+                        column={column}
+                        value={filters[column.id]}
+                        onChange={(value) => handleFilterChange(column.id, value)}
+                      />
+                    </div>
                   </th>
                 ))}
                 {onRowAction && <th />}
