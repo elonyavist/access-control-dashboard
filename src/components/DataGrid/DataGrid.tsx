@@ -19,6 +19,7 @@ import {
 } from './helpers';
 import { ColumnFilter } from './internals/ColumnFilter';
 import { DataGridPagination } from './internals/DataGridPagination';
+import { DataGridToolbar } from './internals/DataGridToolbar';
 import { EmptyView } from './internals/EmptyView';
 import { LoadingSkeleton } from './internals/LoadingSkeleton';
 
@@ -42,7 +43,15 @@ export function DataGrid<T>({
   const [sort, setSort] = useState<SortState | null>(defaultSort ?? null);
   const [filters, setFilters] = useState<Record<string, FilterValue>>({});
   const [currentPage, setCurrentPage] = useState(1);
+  const [hiddenColumnIds, setHiddenColumnIds] = useState<Set<string>>(
+    () => new Set(columns.filter((c) => c.defaultHidden).map((c) => c.id)),
+  );
   const effectivePageSize = pageSize ?? 25;
+
+  const visibleColumns = useMemo(
+    () => columns.filter((c) => !hiddenColumnIds.has(c.id)),
+    [columns, hiddenColumnIds],
+  );
 
   const filteredData = useMemo(
     () => filterRows(data, columns, filters),
@@ -78,6 +87,15 @@ export function DataGrid<T>({
     setCurrentPage(1);
   };
 
+  const handleToggleColumn = (columnId: string) => {
+    setHiddenColumnIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(columnId)) next.delete(columnId);
+      else next.add(columnId);
+      return next;
+    });
+  };
+
   const ariaSortFor = (
     columnId: string,
   ): 'ascending' | 'descending' | 'none' => {
@@ -85,7 +103,7 @@ export function DataGrid<T>({
     return sort.direction === 'asc' ? 'ascending' : 'descending';
   };
 
-  const showFilterRow = columns.some((c) => c.filterable);
+  const showFilterRow = visibleColumns.some((c) => c.filterable);
 
   // 1. Error wins over everything
   if (error) {
@@ -120,6 +138,12 @@ export function DataGrid<T>({
 
   return (
     <div className="w-full rounded-lg border">
+      <DataGridToolbar
+        columns={columns}
+        hiddenColumnIds={hiddenColumnIds}
+        onToggleColumn={handleToggleColumn}
+      />
+
       <div className="overflow-x-auto">
         <table
           className="w-full border-collapse text-sm"
@@ -129,7 +153,7 @@ export function DataGrid<T>({
           {caption && <caption className="sr-only">{caption}</caption>}
           <thead>
             <tr className="border-b bg-muted/40">
-              {columns.map((column) => (
+              {visibleColumns.map((column) => (
                 <th
                   key={column.id}
                   scope="col"
@@ -163,7 +187,7 @@ export function DataGrid<T>({
             </tr>
             {showFilterRow && (
               <tr className="border-b">
-                {columns.map((column) => (
+                {visibleColumns.map((column) => (
                   <th key={column.id} className="px-4 py-2">
                     <ColumnFilter
                       column={column}
@@ -177,7 +201,7 @@ export function DataGrid<T>({
             )}
           </thead>
           {isInitialLoad ? (
-            <LoadingSkeleton columns={columns} />
+            <LoadingSkeleton columns={visibleColumns} />
           ) : (
             <tbody>
               {pageRows.map((row) => (
@@ -188,7 +212,7 @@ export function DataGrid<T>({
                     rowClassName?.(row),
                   )}
                 >
-                  {columns.map((column) => (
+                  {visibleColumns.map((column) => (
                     <td
                       key={column.id}
                       className={cn('px-4 py-3', column.className)}
