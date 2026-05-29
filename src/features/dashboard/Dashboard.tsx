@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { DataGrid } from '@/components/DataGrid';
 import { Timeline } from '@/components/Timeline';
 import { Button } from '@/components/ui/button';
 import type { EventFormValues } from '@/components/EventForm';
 import { EventDialog } from './EventDialog';
+import { DataGridStatesDemo } from './DataGridStatesDemo';
 import { accessEventColumns } from './columns';
 import { useEvents } from '../events/useEvents';
 import { toTimelineItem } from '../events/mappers';
@@ -72,7 +72,8 @@ export function Dashboard() {
             <h2 id="access-log-heading" className="text-lg font-semibold text-slate-800">
               Access log
             </h2>
-            <DataGrid
+            {/* Demo wrapper around <DataGrid>; swap back to <DataGrid> to drop the demo. */}
+            <DataGridStatesDemo
               data={events}
               columns={accessEventColumns}
               getRowId={(e) => e.id}
