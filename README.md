@@ -46,20 +46,24 @@ form builder.
 
 ## Demo app
 
-`App.tsx` wires the three components against one shared store of access events
-(`useEvents`). Choices:
+The demo lives under `src/features/`: `events/` holds the domain (no UI) — `types.ts`, the
+generated `mockData.ts`, the `useEvents` store, and `mappers.ts`; `dashboard/` holds the UI —
+`Dashboard.tsx`, `columns.tsx`, `EventDialog.tsx` (`App.tsx` is just the shell). `Dashboard`
+wires the three components against one shared event store. Choices:
 
-- **Single source of truth**: one `AccessEvent[]` in `useEvents` feeds both the grid (full
-  log, ~300 rows) and the timeline (most recent ~40). Add/edit mutates that array, so a new
-  event shows in both views with no manual syncing. No store library — `useState` is enough
-  for one screen; the hook keeps the named operations (`addEvent` / `updateEvent`) in one place.
-- **Domain stays in the app**: the components are domain-agnostic. `app/columns.tsx` maps
-  `AccessEvent` to grid columns; the timeline gets a one-line `map`; the Form is fed via an
-  `app/EventDialog.tsx` that adapts `Date` ↔ the `datetime-local` string. Form-added events
-  fill the non-form fields with defaults (`method: 'manual'`).
+- **Single source of truth**: one `AccessEvent[]` in `features/events/useEvents.ts` feeds both
+  the grid (full log, ~300 rows) and the timeline (most recent ~40). Add/edit mutates that
+  array, so a new event shows in both views with no manual syncing. No store library —
+  `useState` is enough for one screen; the hook keeps the named operations
+  (`addEvent` / `updateEvent`) in one place.
+- **Domain stays out of the UI**: the components are domain-agnostic.
+  `features/dashboard/columns.tsx` maps `AccessEvent` to grid columns; `features/events/mappers.ts`
+  holds the pure adapters (`toTimelineItem`, and `Date` ↔ the `datetime-local` string); the
+  Form is mounted by `features/dashboard/EventDialog.tsx`. Form-added events fill the non-form
+  fields with defaults (`method: 'manual'`).
 - **Mock data**: `@faker-js/faker` is a devDependency. `scripts/generate-mock-data.mjs`
-  (`npm run generate:data`, seeded for determinism) writes a committed static fixture
-  `app/accessEvents.data.ts`, so faker never reaches the production bundle.
+  (`npm run generate:data`, seeded for determinism) writes the committed static fixture
+  `features/events/mockData.ts`, so faker never reaches the production bundle.
 - **Accessibility**: the dialog closes on save and an app-level `aria-live` region announces
   the result — reliable because, unlike the Form's own status region, it does not unmount with
   the modal. The grid and timeline are `region` landmarks labelled by their headings.
