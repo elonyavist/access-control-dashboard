@@ -3,15 +3,13 @@ import { accessEvents } from './mockData';
 import type { AccessEvent } from './types';
 import type { EventFormValues } from '@/components/EventForm';
 
-let nextEventId = 0;
-
 /** Owns the shared access-event store. New events are prepended; both views read `events`. */
 export function useEvents() {
   const [events, setEvents] = useState<AccessEvent[]>(() => [...accessEvents]);
 
   const addEvent = useCallback((values: EventFormValues): AccessEvent => {
     const event: AccessEvent = {
-      id: `evt-new-${nextEventId++}`,
+      id: crypto.randomUUID(),
       title: values.title,
       date: new Date(values.date),
       user: 'Admin',

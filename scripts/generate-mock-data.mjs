@@ -19,10 +19,10 @@ const LOCATIONS = [
 const SEED_METHODS = ['badge', 'pin', 'mobile'];
 const COUNT = 300;
 
-const events = Array.from({ length: COUNT }, (_, i) => {
+const events = Array.from({ length: COUNT }, () => {
   const location = faker.helpers.arrayElement(LOCATIONS);
   return {
-    id: `evt-${i}`,
+    id: faker.string.uuid(), // seeded → deterministic uuids (reproducible from faker.seed)
     date: faker.date.recent({ days: 60 }),
     title: `Access — ${location}`,
     user: faker.person.fullName(),
