@@ -67,3 +67,7 @@ wires the three components against one shared event store. Choices:
 - **Accessibility**: the dialog closes on save and an app-level `aria-live` region announces
   the result — reliable because, unlike the Form's own status region, it does not unmount with
   the modal. The grid and timeline are `region` landmarks labelled by their headings.
+- **Previewing grid states**: the grid is wrapped in a demo-only `DataGridStatesDemo`
+  (`features/dashboard/`) that adds buttons to flip the `DataGrid` between its normal / loading
+  / empty / error views (Error includes a working Retry). It's a drop-in over `<DataGrid>` — to
+  ship without it, swap the tag back to `<DataGrid>` (same props) and delete the file.
