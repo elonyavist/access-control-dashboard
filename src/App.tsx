@@ -6,13 +6,12 @@ import { Button } from '@/components/ui/button';
 import type { EventFormValues } from '@/components/EventForm';
 import { EventDialog } from './app/EventDialog';
 import { accessEventColumns } from './app/columns';
-import { accessEvents } from './app/accessEvents.data';
+import { useEvents } from './app/useEvents';
 import type { AccessEvent } from './app/types';
 
 // Timeline shows the front slice of the store. New events are prepended, so an added
 // event is always in the slice (and thus in the timeline) regardless of its date.
 const TIMELINE_SIZE = 40;
-let nextEventId = 0;
 
 function toTimelineItem(e: AccessEvent): TimelineItem {
   return {
@@ -24,7 +23,7 @@ function toTimelineItem(e: AccessEvent): TimelineItem {
 }
 
 function App() {
-  const [events, setEvents] = useState<AccessEvent[]>(() => [...accessEvents]);
+  const { events, addEvent, updateEvent } = useEvents();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<AccessEvent | null>(null);
   const [announcement, setAnnouncement] = useState('');
@@ -41,25 +40,10 @@ function App() {
 
   const handleSave = (values: EventFormValues) => {
     if (editing) {
-      setEvents((prev) =>
-        prev.map((e) =>
-          e.id === editing.id
-            ? { ...e, title: values.title, date: new Date(values.date) }
-            : e,
-        ),
-      );
+      updateEvent(editing.id, values);
       setAnnouncement(`Event "${values.title}" updated.`);
     } else {
-      const event: AccessEvent = {
-        id: `evt-new-${nextEventId++}`,
-        title: values.title,
-        date: new Date(values.date),
-        user: 'Admin',
-        location: 'Main Entrance', // a real location so it matches the Location filter
-        result: 'granted',
-        method: 'manual',
-      };
-      setEvents((prev) => [event, ...prev]);
+      addEvent(values);
       setAnnouncement(`Event "${values.title}" added to the log and timeline.`);
     }
     setDialogOpen(false);
