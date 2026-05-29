@@ -1,4 +1,3 @@
-import { format } from 'date-fns';
 import {
   Dialog,
   DialogContent,
@@ -8,7 +7,8 @@ import {
 } from '@/components/ui/dialog';
 import { EventForm } from '@/components/EventForm';
 import type { EventFormValues } from '@/components/EventForm';
-import type { AccessEvent } from './types';
+import type { AccessEvent } from '../events/types';
+import { toEventDateInput } from '../events/mappers';
 
 interface EventDialogProps {
   open: boolean;
@@ -18,13 +18,10 @@ interface EventDialogProps {
   onSave: (values: EventFormValues) => void;
 }
 
-// The Form's `date` is the datetime-local string format; the domain uses Date.
-const toInput = (d: Date) => format(d, "yyyy-MM-dd'T'HH:mm");
-
 export function EventDialog({ open, onOpenChange, event, onSave }: EventDialogProps) {
   const isEdit = event !== null;
   const initialValue = event
-    ? { title: event.title, date: toInput(event.date) }
+    ? { title: event.title, date: toEventDateInput(event.date) }
     : undefined;
 
   return (

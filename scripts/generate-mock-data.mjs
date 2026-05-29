@@ -1,5 +1,5 @@
 // Dev-only generator for the demo dataset. Run with: npm run generate:data
-// Output is committed as src/app/accessEvents.data.ts, so faker stays a devDependency
+// Output is committed as src/features/events/mockData.ts, so faker stays a devDependency
 // and never reaches the production bundle.
 import { faker } from '@faker-js/faker';
 import { writeFileSync } from 'node:fs';
@@ -59,6 +59,6 @@ ${rows}
 ];
 `;
 
-const out = fileURLToPath(new URL('../src/app/accessEvents.data.ts', import.meta.url));
+const out = fileURLToPath(new URL('../src/features/events/mockData.ts', import.meta.url));
 writeFileSync(out, file);
 console.log(`Wrote ${events.length} events to ${out}`);

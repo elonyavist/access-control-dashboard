@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import type { ColumnDef } from '@/components/DataGrid';
-import { LOCATIONS, METHODS, type AccessEvent } from './types';
+import { LOCATIONS, METHODS, type AccessEvent } from '../events/types';
 
 export const accessEventColumns: ColumnDef<AccessEvent>[] = [
   { id: 'title', label: 'Event', accessor: 'title', filterable: true, filterType: 'text' },

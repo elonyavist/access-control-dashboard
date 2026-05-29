@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { accessEvents } from './accessEvents.data';
+import { accessEvents } from './mockData';
 import type { AccessEvent } from './types';
 import type { EventFormValues } from '@/components/EventForm';
 
