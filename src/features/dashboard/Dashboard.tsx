@@ -8,6 +8,7 @@ import { accessEventColumns } from './columns';
 import { useEvents } from '../events/useEvents';
 import { toTimelineItem } from '../events/mappers';
 import type { AccessEvent } from '../events/types';
+import { useAnnouncer } from '@/hooks/useAnnouncer';
 
 // Timeline shows the front slice of the store. New events are prepended, so an added
 // event is always in the slice (and thus in the timeline) regardless of its date.
@@ -17,7 +18,7 @@ export function Dashboard() {
   const { events, addEvent, updateEvent } = useEvents();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<AccessEvent | null>(null);
-  const [announcement, setAnnouncement] = useState('');
+  const { message: announcement, announce } = useAnnouncer();
 
   const openAdd = () => {
     setEditing(null);
@@ -32,11 +33,12 @@ export function Dashboard() {
   const handleSave = (values: EventFormValues) => {
     if (editing) {
       updateEvent(editing.id, values);
-      setAnnouncement(`Event "${values.title}" updated.`);
+      announce(`Event "${values.title}" updated.`);
     } else {
       addEvent(values);
-      setAnnouncement(`Event "${values.title}" added to the log and timeline.`);
+      announce(`Event "${values.title}" added to the log and timeline.`);
     }
+    // useAnnouncer defers the message so it lands after the dialog closes (see the hook).
     setDialogOpen(false);
     setEditing(null);
   };

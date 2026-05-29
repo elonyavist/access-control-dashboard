@@ -24,8 +24,9 @@ describe('App — event flows', () => {
     expect(within(grid).getByText('Front door breach')).toBeInTheDocument();
 
     // App-level live region carries the announcement (queried by text to avoid the
-    // multiple role="status" regions from Timeline / EventForm).
-    expect(screen.getByText(/added to the log and timeline/i)).toBeInTheDocument();
+    // multiple role="status" regions from Timeline / EventForm). It's set after the dialog
+    // closes (deferred for screen readers), so wait for it with findByText.
+    expect(await screen.findByText(/added to the log and timeline/i)).toBeInTheDocument();
   });
 
   it('edits an event and reflects the change in both views', async () => {
@@ -48,6 +49,6 @@ describe('App — event flows', () => {
     const timeline = screen.getByRole('region', { name: /recent activity/i });
     expect(within(timeline).getByText('Renamed entry')).toBeInTheDocument();
 
-    expect(screen.getByText(/updated/i)).toBeInTheDocument();
+    expect(await screen.findByText(/updated/i)).toBeInTheDocument();
   });
 });
