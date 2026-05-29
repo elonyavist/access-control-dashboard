@@ -2,6 +2,9 @@
 
 A small library of three reusable React components, with a demo app showcasing them.
 
+The live version is available at: https://access-control-dashboard-ten.vercel.app/
+
+
 Stack: Vite + React 19 + TypeScript (strict), Tailwind, shadcn/ui (Radix), Vitest.
 
 ## Components
